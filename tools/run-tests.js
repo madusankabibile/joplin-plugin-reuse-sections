@@ -234,7 +234,9 @@ const testViewer = () => {
 	].join('\n'));
 
 	check('a section becomes a container',
-		html.includes('class="rsx-section" data-rsx-section="brain"'));
+		/class="rsx-section [^"]*" data-rsx-section="brain"/.test(html), html);
+	check('drawn in the colour the settings ask for',
+		html.includes('rsx-c-violet'), html);
 	check('its label is shown', html.includes('rsx-section-label">Grey matter'));
 	check('its contents are still markdown', html.includes('<strong>brain</strong>'));
 	check('a reference becomes a placeholder for the viewer script',

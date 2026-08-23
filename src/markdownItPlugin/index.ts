@@ -23,6 +23,7 @@ import {
 	EmbedMeta,
 	SectionMeta,
 	embedClose,
+	embedColour,
 	embedOpen,
 	embedPlaceholder,
 	referenceError,
@@ -139,6 +140,7 @@ export default (_context: { contentScriptId: string }) => {
 					folderPath: entry.folderPath,
 					sectionTitle: entry.sectionTitle,
 					header: settingValue('showEmbedHeader', true) !== false,
+					colour: embedColour(settingValue('embedColour', '')),
 				};
 
 				const open = state.push('rsx_embed_open', 'div', 1);
@@ -208,6 +210,7 @@ export default (_context: { contentScriptId: string }) => {
 					index,
 					unclosed: !closed,
 					hidden: settingValue('showSectionMarkers', true) === false,
+					colour: embedColour(settingValue('embedColour', '')),
 				};
 
 				const oldParent = state.parentType;

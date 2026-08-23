@@ -8,7 +8,7 @@ import {
 } from 'api/types';
 import { formatReference, parseRefLine, parseReference } from './reuse/syntax';
 import { EmbedCache, parseCache, serialiseCache } from './reuse/cache';
-import { embedClasses, embedHtml } from './reuse/render';
+import { embedClasses, embedColour, embedHtml } from './reuse/render';
 import { NoteEntry, PickResult } from './reuse/types';
 import {
 	clearEmbedCache,
@@ -75,6 +75,26 @@ joplin.plugins.register({
 				public: true,
 				label: 'Show where reused content comes from',
 				description: 'Draws the source note and section above the content.',
+			},
+			embedColour: {
+				value: 'violet',
+				type: SettingItemType.String,
+				section: 'reuseSections',
+				public: true,
+				isEnum: true,
+				options: {
+					violet: 'Violet',
+					blue: 'Blue',
+					teal: 'Teal',
+					green: 'Green',
+					amber: 'Amber',
+					red: 'Red',
+					grey: 'Grey',
+					outline: 'No background, outline only',
+					none: 'No box at all',
+				},
+				label: 'Colour around reused content',
+				description: 'The tint and rule drawn around content borrowed from another note.',
 			},
 			showSectionMarkers: {
 				value: true,
@@ -379,7 +399,10 @@ joplin.plugins.register({
 				if (!reference) return null;
 
 				const result = await resolveEmbed(reference);
-				const options = { header: (await setting('showEmbedHeader')) !== false };
+				const options = {
+					header: (await setting('showEmbedHeader')) !== false,
+					colour: embedColour(await setting('embedColour')),
+				};
 
 				return {
 					classes: embedClasses(result, options),

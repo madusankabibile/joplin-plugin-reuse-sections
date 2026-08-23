@@ -16,9 +16,28 @@ export const escapeHtml = (text: string): string => String(text)
 /** The class every embed and every section marker is built on. */
 export const EMBED_CLASS = 'rsx-embed';
 
+/**
+ * What may be drawn around borrowed content. The colours tint the box and the
+ * rule down its side; `outline` keeps the frame without the tint, and `none`
+ * leaves the content to sit in the note with nothing around it at all.
+ */
+export const EMBED_COLOURS = [
+	'violet', 'blue', 'teal', 'green', 'amber', 'red', 'grey', 'outline', 'none',
+];
+
+export const DEFAULT_COLOUR = 'violet';
+
+/** Whatever the setting says, narrowed to something with a stylesheet. */
+export const embedColour = (value: any): string => {
+	const name = String(value || '');
+	return EMBED_COLOURS.indexOf(name) === -1 ? DEFAULT_COLOUR : name;
+};
+
 export interface EmbedOptions {
 	/** Draw the source line above the content. */
 	header: boolean;
+	/** One of `EMBED_COLOURS`. */
+	colour: string;
 }
 
 /**
@@ -62,10 +81,12 @@ export interface EmbedMeta {
 	folderPath: string[];
 	sectionTitle: string;
 	header: boolean;
+	/** One of `EMBED_COLOURS`. */
+	colour: string;
 }
 
 export const embedOpen = (meta: EmbedMeta): string => {
-	const classes = [EMBED_CLASS, 'rsx-ready', 'rsx-inline'];
+	const classes = [EMBED_CLASS, 'rsx-ready', 'rsx-inline', `rsx-c-${embedColour(meta.colour)}`];
 	if (!meta.header) classes.push('rsx-bare');
 	if (!meta.sectionTitle) classes.push('rsx-whole-note');
 
@@ -102,7 +123,7 @@ export const embedHtml = (result: EmbedResult, options: EmbedOptions): string =>
 
 /** The class list of the outer element, so the viewer can swap states. */
 export const embedClasses = (result: EmbedResult, options: EmbedOptions): string => {
-	const out = [EMBED_CLASS, result.ok ? 'rsx-ready' : 'rsx-failed'];
+	const out = [EMBED_CLASS, result.ok ? 'rsx-ready' : 'rsx-failed', `rsx-c-${embedColour(options.colour)}`];
 	if (result.ok && !options.header) out.push('rsx-bare');
 	if (result.ok && !result.sectionTitle) out.push('rsx-whole-note');
 	return out.join(' ');
@@ -119,6 +140,8 @@ export interface SectionMeta {
 	unclosed: boolean;
 	/** "Outline shareable sections" is off: keep the content, drop the frame. */
 	hidden: boolean;
+	/** One of `EMBED_COLOURS`, so a section is marked in the same colour. */
+	colour: string;
 }
 
 /**
@@ -131,7 +154,7 @@ export const sectionOpen = (meta: SectionMeta): string => {
 		? `${escapeHtml(meta.id)} <span class="rsx-section-label">${escapeHtml(meta.label)}</span>`
 		: escapeHtml(meta.id);
 
-	const classes = ['rsx-section'];
+	const classes = ['rsx-section', `rsx-c-${embedColour(meta.colour)}`];
 	if (meta.unclosed) classes.push('rsx-section-unclosed');
 	if (meta.hidden) classes.push('rsx-section-plain');
 

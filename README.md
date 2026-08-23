@@ -129,6 +129,7 @@ holds one line - the reference - and nothing else. So:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | Show where reused content comes from | on | The source note and section, above the content |
+| Colour around reused content | violet | Violet, blue, teal, green, amber, red, grey, an outline with no tint, or no box at all |
 | Outline shareable sections in the viewer | on | Marks the parts of a note others can reuse |
 | Fill in new references without waiting | on | Shows a brand new reference's content straight away, rather than when the note is next drawn |
 | Follow references inside reused content | on | A reused section brings its own references along, three levels deep |

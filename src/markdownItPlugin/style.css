@@ -101,13 +101,6 @@
 	background: transparent;
 }
 
-/* A reference that points at nothing: the text is kept, so it can be fixed. */
-.rsx-failed {
-	--rsx-accent: #dc2626;
-	--rsx-tint: rgba(220, 38, 38, 0.06);
-	--rsx-tint-2: rgba(220, 38, 38, 0.14);
-}
-
 .rsx-error {
 	display: flex;
 	flex-direction: column;
@@ -130,6 +123,135 @@
 .rsx-missing {
 	opacity: 0.6;
 	font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   The colour around reused content
+   -------------------------------------------------------------------------- */
+
+/* Set in the plugin's settings, and written onto the element by the rule that
+   draws it, so a note can be read without a wash of somebody's favourite
+   colour through the middle of it. */
+
+.rsx-c-violet {
+	--rsx-accent: #7c3aed;
+	--rsx-tint: rgba(124, 58, 237, 0.06);
+	--rsx-tint-2: rgba(124, 58, 237, 0.14);
+	--rsx-edge: rgba(124, 58, 237, 0.38);
+}
+
+.rsx-c-blue {
+	--rsx-accent: #2563eb;
+	--rsx-tint: rgba(37, 99, 235, 0.06);
+	--rsx-tint-2: rgba(37, 99, 235, 0.14);
+	--rsx-edge: rgba(37, 99, 235, 0.38);
+}
+
+.rsx-c-teal {
+	--rsx-accent: #0d9488;
+	--rsx-tint: rgba(13, 148, 136, 0.06);
+	--rsx-tint-2: rgba(13, 148, 136, 0.14);
+	--rsx-edge: rgba(13, 148, 136, 0.38);
+}
+
+.rsx-c-green {
+	--rsx-accent: #16a34a;
+	--rsx-tint: rgba(22, 163, 74, 0.06);
+	--rsx-tint-2: rgba(22, 163, 74, 0.14);
+	--rsx-edge: rgba(22, 163, 74, 0.38);
+}
+
+.rsx-c-amber {
+	--rsx-accent: #b45309;
+	--rsx-tint: rgba(180, 83, 9, 0.06);
+	--rsx-tint-2: rgba(180, 83, 9, 0.14);
+	--rsx-edge: rgba(180, 83, 9, 0.38);
+}
+
+.rsx-c-red {
+	--rsx-accent: #dc2626;
+	--rsx-tint: rgba(220, 38, 38, 0.06);
+	--rsx-tint-2: rgba(220, 38, 38, 0.14);
+	--rsx-edge: rgba(220, 38, 38, 0.38);
+}
+
+.rsx-c-grey {
+	--rsx-accent: #64748b;
+	--rsx-tint: rgba(100, 116, 139, 0.06);
+	--rsx-tint-2: rgba(100, 116, 139, 0.14);
+	--rsx-edge: rgba(100, 116, 139, 0.38);
+}
+
+/* No tint, just a frame. */
+.rsx-c-outline {
+	--rsx-accent: var(--rsx-line);
+	--rsx-tint: transparent;
+	--rsx-tint-2: transparent;
+	--rsx-edge: var(--rsx-line);
+}
+
+.rsx-c-outline .rsx-chip {
+	border: 1px solid var(--rsx-line);
+	color: inherit;
+	opacity: 0.75;
+}
+
+.rsx-c-outline .rsx-source {
+	color: var(--joplin-url-color, inherit);
+}
+
+/* Nothing at all: the content sits in the note as if it had been typed there. */
+.rsx-embed.rsx-c-none {
+	border: 0;
+	background: transparent;
+	border-radius: 0;
+	margin: 1em 0;
+}
+
+.rsx-c-none .rsx-embed-inner {
+	padding: 0;
+}
+
+.rsx-c-none .rsx-head {
+	border-bottom: 0;
+	margin-bottom: 0.25em;
+	opacity: 0.7;
+}
+
+.rsx-c-none .rsx-chip {
+	background: transparent;
+	border: 1px solid var(--rsx-line);
+	color: inherit;
+}
+
+.rsx-c-none .rsx-source {
+	color: var(--joplin-url-color, inherit);
+}
+
+.rsx-section.rsx-c-none {
+	border-left: 0;
+	padding-left: 0;
+}
+
+.rsx-section.rsx-c-none .rsx-section-tag {
+	color: inherit;
+	opacity: 0.5;
+}
+
+/* A reference that points at nothing keeps its own red, whatever the colour
+   setting says - hence the doubled class, which outranks the colours above. */
+.rsx-embed.rsx-failed {
+	--rsx-accent: #dc2626;
+	--rsx-tint: rgba(220, 38, 38, 0.06);
+	--rsx-tint-2: rgba(220, 38, 38, 0.14);
+	--rsx-edge: rgba(220, 38, 38, 0.38);
+	border: 1px solid var(--rsx-line);
+	border-left: 3px solid var(--rsx-accent);
+	background: var(--rsx-tint);
+}
+
+.rsx-embed.rsx-failed .rsx-embed-inner {
+	padding: 0.35em 0.9em 0.5em;
 }
 
 /* --------------------------------------------------------------------------
@@ -199,10 +321,60 @@
 		--rsx-edge: rgba(167, 139, 250, 0.42);
 	}
 
-	.rsx-failed {
+	.rsx-c-violet {
+		--rsx-accent: #a78bfa;
+		--rsx-tint: rgba(167, 139, 250, 0.08);
+		--rsx-tint-2: rgba(167, 139, 250, 0.18);
+		--rsx-edge: rgba(167, 139, 250, 0.42);
+	}
+
+	.rsx-c-blue {
+		--rsx-accent: #60a5fa;
+		--rsx-tint: rgba(96, 165, 250, 0.08);
+		--rsx-tint-2: rgba(96, 165, 250, 0.18);
+		--rsx-edge: rgba(96, 165, 250, 0.42);
+	}
+
+	.rsx-c-teal {
+		--rsx-accent: #2dd4bf;
+		--rsx-tint: rgba(45, 212, 191, 0.08);
+		--rsx-tint-2: rgba(45, 212, 191, 0.18);
+		--rsx-edge: rgba(45, 212, 191, 0.42);
+	}
+
+	.rsx-c-green {
+		--rsx-accent: #4ade80;
+		--rsx-tint: rgba(74, 222, 128, 0.08);
+		--rsx-tint-2: rgba(74, 222, 128, 0.18);
+		--rsx-edge: rgba(74, 222, 128, 0.42);
+	}
+
+	.rsx-c-amber {
+		--rsx-accent: #fbbf24;
+		--rsx-tint: rgba(251, 191, 36, 0.08);
+		--rsx-tint-2: rgba(251, 191, 36, 0.18);
+		--rsx-edge: rgba(251, 191, 36, 0.42);
+	}
+
+	.rsx-c-red {
 		--rsx-accent: #f87171;
 		--rsx-tint: rgba(248, 113, 113, 0.08);
 		--rsx-tint-2: rgba(248, 113, 113, 0.18);
+		--rsx-edge: rgba(248, 113, 113, 0.42);
+	}
+
+	.rsx-c-grey {
+		--rsx-accent: #94a3b8;
+		--rsx-tint: rgba(148, 163, 184, 0.08);
+		--rsx-tint-2: rgba(148, 163, 184, 0.18);
+		--rsx-edge: rgba(148, 163, 184, 0.42);
+	}
+
+	.rsx-embed.rsx-failed {
+		--rsx-accent: #f87171;
+		--rsx-tint: rgba(248, 113, 113, 0.08);
+		--rsx-tint-2: rgba(248, 113, 113, 0.18);
+		--rsx-edge: rgba(248, 113, 113, 0.42);
 	}
 
 	.rsx-section-unclosed {
