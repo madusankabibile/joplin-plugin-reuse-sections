@@ -1,0 +1,265 @@
+/* ==========================================================================
+   Reuse Sections - the picker dialog
+   ========================================================================== */
+
+:root {
+	--rsx-accent: #7c3aed;
+	--rsx-fg: var(--joplin-color, #24292e);
+	--rsx-bg: var(--joplin-background-color, #ffffff);
+	--rsx-line: var(--joplin-divider-color, #d8dbe0);
+	--rsx-muted: var(--joplin-color-faded, #7c8188);
+	--rsx-tint: rgba(124, 58, 237, 0.08);
+	--rsx-tint-2: rgba(124, 58, 237, 0.16);
+}
+
+/* Joplin's dialog wrapper is sized to fit its content, and its default max
+ * width is narrower than this picker wants. */
+.dialog-content,
+#joplin-plugin-content {
+	max-width: none !important;
+	width: auto !important;
+}
+
+body.rsx-mobile .dialog-content,
+body.rsx-mobile #joplin-plugin-content {
+	width: 100% !important;
+	padding: 0 !important;
+}
+
+#rsx-picker {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	max-width: 100%;
+	font-family: var(--joplin-font-family, sans-serif);
+	color: var(--rsx-fg);
+	font-size: 14px;
+}
+
+#rsx-picker * {
+	box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   Head: where you are, and the filter
+   -------------------------------------------------------------------------- */
+
+.picker-head {
+	flex: 0 0 auto;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--rsx-line);
+}
+
+.picker-steps {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--rsx-muted);
+	margin-bottom: 8px;
+}
+
+.picker-steps .step {
+	padding: 2px 8px;
+	border: 1px solid var(--rsx-line);
+	border-radius: 999px;
+	opacity: 0.6;
+}
+
+.picker-steps .step.done {
+	border-color: var(--rsx-accent);
+	color: var(--rsx-accent);
+	background: var(--rsx-tint);
+	opacity: 1;
+}
+
+/* The chevrons between the steps, drawn rather than typed so they cannot end
+ * up in the filter text. */
+.picker-steps .step + .step::before {
+	content: '›';
+	position: relative;
+	left: -6px;
+	color: var(--rsx-muted);
+}
+
+#rsx-picker h2 {
+	margin: 0 0 2px;
+	font-size: 17px;
+	font-weight: 600;
+}
+
+.crumb {
+	margin: 0 0 8px;
+	font-size: 12px;
+	color: var(--rsx-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#rsx-search {
+	width: 100%;
+	padding: 7px 10px;
+	border: 1px solid var(--rsx-line);
+	border-radius: 5px;
+	background: var(--rsx-bg);
+	color: var(--rsx-fg);
+	font-size: 13px;
+	font-family: inherit;
+}
+
+#rsx-search:focus {
+	outline: none;
+	border-color: var(--rsx-accent);
+	box-shadow: 0 0 0 2px var(--rsx-tint);
+}
+
+/* --------------------------------------------------------------------------
+   Body: the rows
+   -------------------------------------------------------------------------- */
+
+.picker-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+}
+
+#rsx-list {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 8px 2px 8px 0;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin: 0 0 2px;
+	padding: 7px 10px;
+	padding-left: calc(10px + var(--depth, 0) * 14px);
+	border: 1px solid transparent;
+	border-radius: 5px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.row:hover {
+	background: var(--rsx-tint);
+}
+
+.row.selected {
+	background: var(--rsx-tint);
+	border-color: var(--rsx-accent);
+}
+
+.row.hidden,
+.hidden {
+	display: none;
+}
+
+.row-main {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.row-title {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.row-sub {
+	font-size: 12px;
+	color: var(--rsx-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.row-tag {
+	flex: 0 0 auto;
+	padding: 2px 7px;
+	border-radius: 999px;
+	background: var(--rsx-tint-2);
+	color: var(--rsx-accent);
+	font-family: monospace;
+	font-size: 11px;
+}
+
+/* A notebook row deeper in the tree gets a guide line, so the indentation
+ * reads as nesting rather than as ragged text. */
+.row[style*='--depth:1'],
+.row[style*='--depth:2'],
+.row[style*='--depth:3'],
+.row[style*='--depth:4'],
+.row[style*='--depth:5'],
+.row[style*='--depth:6'] {
+	box-shadow: inset 1px 0 0 var(--rsx-line);
+}
+
+/* The two rows that are not really list items: "recently edited" and "the
+ * whole note". */
+.row-recent,
+.row-whole {
+	border-color: var(--rsx-line);
+	border-style: dashed;
+	margin-bottom: 8px;
+}
+
+.empty {
+	margin: 16px 10px;
+	color: var(--rsx-muted);
+	font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   Foot
+   -------------------------------------------------------------------------- */
+
+.picker-foot {
+	flex: 0 0 auto;
+	padding-top: 8px;
+	border-top: 1px solid var(--rsx-line);
+	font-size: 12px;
+	color: var(--rsx-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Phones
+   -------------------------------------------------------------------------- */
+
+#rsx-picker.mobile {
+	font-size: 15px;
+}
+
+#rsx-picker.mobile .row {
+	padding: 11px 10px;
+}
+
+#rsx-picker.mobile .picker-steps {
+	font-size: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Dark themes
+   -------------------------------------------------------------------------- */
+
+/* The dialog takes its background and text from Joplin, but the accent is ours,
+ * so it is lightened rather than left as a dark violet on a dark panel. */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--rsx-accent: #a78bfa;
+		--rsx-tint: rgba(167, 139, 250, 0.12);
+		--rsx-tint-2: rgba(167, 139, 250, 0.22);
+	}
+}

@@ -1,0 +1,91 @@
+/* ==========================================================================
+   Reuse Sections - markdown editor (CodeMirror 6) styles
+   ========================================================================== */
+
+.cm-rsx-line {
+	--rsx-accent: #7c3aed;
+	--rsx-fg: var(--joplin-color, #24292e);
+	--rsx-bg: var(--joplin-background-color, #ffffff);
+	--rsx-tint: rgba(124, 58, 237, 0.07);
+	--rsx-tint-2: rgba(124, 58, 237, 0.16);
+	--rsx-muted: var(--rsx-fg);
+}
+
+/* The tints stay translucent rather than being mixed into the editor
+ * background: CodeMirror draws the selection in a layer behind .cm-content, so
+ * an opaque line background would hide it and make the section look
+ * unselectable. */
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+	.cm-rsx-line {
+		--rsx-tint: color-mix(in srgb, var(--rsx-accent) 8%, transparent);
+		--rsx-tint-2: color-mix(in srgb, var(--rsx-accent) 18%, transparent);
+		--rsx-muted: color-mix(in srgb, var(--rsx-fg) 60%, var(--rsx-bg));
+	}
+}
+
+/* --------------------------------------------------------------------------
+   A section this note shares
+   -------------------------------------------------------------------------- */
+
+.cm-rsx-line {
+	background: var(--rsx-tint);
+	box-shadow: inset 3px 0 0 var(--rsx-accent);
+}
+
+.cm-rsx-fence {
+	background: var(--rsx-tint-2);
+}
+
+.cm-rsx-depth-2 { padding-left: 10px; }
+.cm-rsx-depth-3 { padding-left: 20px; }
+.cm-rsx-depth-4 { padding-left: 30px; }
+
+/* `&&&`, `/&&&` and the `&&&/` of a reference. */
+.cm-rsx-marker {
+	color: var(--rsx-accent);
+	font-weight: 700;
+	opacity: 0.85;
+}
+
+/* The section id - what a reference has to name to reach this content. */
+.cm-rsx-id {
+	color: var(--rsx-accent);
+	font-weight: 600;
+}
+
+.cm-rsx-label {
+	color: var(--rsx-muted);
+	font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   A reference to somebody else's content
+   -------------------------------------------------------------------------- */
+
+.cm-rsx-ref {
+	background: var(--rsx-tint);
+	box-shadow: inset 3px 0 0 var(--rsx-accent);
+}
+
+.cm-rsx-target {
+	color: var(--rsx-accent);
+	text-decoration: underline;
+	text-decoration-color: var(--rsx-tint-2);
+	text-underline-offset: 2px;
+}
+
+/* `/#section` - the part of the note being reused. */
+.cm-rsx-section-name {
+	color: var(--rsx-accent);
+	font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Dark themes
+   -------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+	.cm-rsx-line {
+		--rsx-accent: #a78bfa;
+	}
+}

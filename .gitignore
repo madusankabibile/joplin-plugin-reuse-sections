@@ -1,0 +1,15 @@
+dist/
+node_modules/
+publish/
+
+# Local tooling
+.claude/
+
+# Throwaway build made by `npm test`
+.test-build/
+
+# Throwaway build made by `npm test`
+.test-build/
+
+# Generated alongside the manual PDF by `npm run manual`
+docs/manual.html

@@ -1,0 +1,222 @@
+/* ==========================================================================
+   Reuse Sections - note viewer styles
+   ========================================================================== */
+
+.rsx-embed,
+.rsx-section {
+	--rsx-accent: #7c3aed;
+	--rsx-fg: var(--joplin-color, #24292e);
+	--rsx-bg: var(--joplin-background-color, #ffffff);
+	--rsx-line: var(--joplin-divider-color, #d8dbe0);
+	--rsx-tint: rgba(124, 58, 237, 0.06);
+	--rsx-tint-2: rgba(124, 58, 237, 0.14);
+	--rsx-edge: rgba(124, 58, 237, 0.38);
+}
+
+/* --------------------------------------------------------------------------
+   Borrowed content
+   -------------------------------------------------------------------------- */
+
+.rsx-embed {
+	margin: 1em 0;
+	border: 1px solid var(--rsx-line);
+	border-left: 3px solid var(--rsx-accent);
+	border-radius: 6px;
+	background: var(--rsx-tint);
+	overflow: hidden;
+}
+
+.rsx-embed-inner {
+	padding: 0.35em 0.9em 0.5em;
+}
+
+/* The source line: where this content actually lives. */
+.rsx-head {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	flex-wrap: wrap;
+	padding: 0.15em 0 0.35em;
+	border-bottom: 1px solid var(--rsx-line);
+	margin-bottom: 0.5em;
+	font-size: 0.78em;
+	line-height: 1.5;
+}
+
+.rsx-source {
+	color: var(--rsx-accent);
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 70%;
+}
+
+.rsx-source:hover {
+	text-decoration: underline;
+}
+
+.rsx-chip {
+	padding: 0.05em 0.5em;
+	border-radius: 999px;
+	background: var(--rsx-tint-2);
+	color: var(--rsx-accent);
+	font-family: var(--joplin-font-family, monospace);
+	font-size: 0.92em;
+	white-space: nowrap;
+}
+
+.rsx-chip-note {
+	background: transparent;
+	border: 1px solid var(--rsx-line);
+	color: inherit;
+	opacity: 0.75;
+	font-family: inherit;
+}
+
+/* The borrowed content itself sits flush with the note around it. */
+.rsx-body > :first-child { margin-top: 0; }
+.rsx-body > :last-child { margin-bottom: 0; }
+
+.rsx-body img {
+	max-width: 100%;
+	height: auto;
+}
+
+.rsx-body a[data-rsx-note] {
+	cursor: pointer;
+}
+
+/* Waiting for the plugin to answer. */
+.rsx-status {
+	padding: 0.2em 0;
+	font-size: 0.85em;
+	opacity: 0.55;
+}
+
+.rsx-loading {
+	border-left-color: var(--rsx-line);
+	background: transparent;
+}
+
+/* A reference that points at nothing: the text is kept, so it can be fixed. */
+.rsx-failed {
+	--rsx-accent: #dc2626;
+	--rsx-tint: rgba(220, 38, 38, 0.06);
+	--rsx-tint-2: rgba(220, 38, 38, 0.14);
+}
+
+.rsx-error {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	padding: 0.2em 0;
+	font-size: 0.88em;
+}
+
+.rsx-error-title {
+	font-weight: 600;
+	color: var(--rsx-accent);
+}
+
+.rsx-error-ref {
+	font-size: 0.92em;
+	opacity: 0.7;
+	word-break: break-all;
+}
+
+.rsx-missing {
+	opacity: 0.6;
+	font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   A section in the note that owns it
+   -------------------------------------------------------------------------- */
+
+.rsx-section {
+	position: relative;
+	margin: 1em 0;
+	padding: 0.1em 0 0.1em 0.9em;
+	border-left: 2px dashed var(--rsx-edge);
+}
+
+.rsx-section-tag {
+	font-size: 0.72em;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--rsx-accent);
+	opacity: 0.75;
+	margin-bottom: 0.25em;
+	font-family: var(--joplin-font-family, monospace);
+}
+
+.rsx-section-label {
+	text-transform: none;
+	letter-spacing: 0;
+	opacity: 0.8;
+	font-style: italic;
+}
+
+.rsx-section-unclosed {
+	border-left-style: dotted;
+	border-left-color: #f59e0b;
+}
+
+.rsx-section-body > :first-child { margin-top: 0; }
+.rsx-section-body > :last-child { margin-bottom: 0; }
+
+/* "Show section markers" turned off: the content stays, the frame goes. */
+.rsx-hide-sections .rsx-section {
+	border-left: 0;
+	padding-left: 0;
+	margin: 0;
+}
+
+.rsx-hide-sections .rsx-section-tag {
+	display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Dark themes
+   -------------------------------------------------------------------------- */
+
+/* Joplin's own colours arrive as variables and follow its theme, but the accent
+ * is ours - so it is lightened here rather than staying a dark violet on a dark
+ * background. Last in the file, so it wins over the states above. */
+@media (prefers-color-scheme: dark) {
+	.rsx-embed,
+	.rsx-section {
+		--rsx-accent: #a78bfa;
+		--rsx-tint: rgba(167, 139, 250, 0.08);
+		--rsx-tint-2: rgba(167, 139, 250, 0.18);
+		--rsx-edge: rgba(167, 139, 250, 0.42);
+	}
+
+	.rsx-failed {
+		--rsx-accent: #f87171;
+		--rsx-tint: rgba(248, 113, 113, 0.08);
+		--rsx-tint-2: rgba(248, 113, 113, 0.18);
+	}
+
+	.rsx-section-unclosed {
+		border-left-color: #fbbf24;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   Print and export
+   -------------------------------------------------------------------------- */
+
+@media print {
+	.rsx-embed {
+		background: transparent;
+		break-inside: avoid;
+	}
+
+	.rsx-head {
+		opacity: 0.7;
+	}
+}
