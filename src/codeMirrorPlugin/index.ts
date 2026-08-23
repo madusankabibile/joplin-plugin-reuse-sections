@@ -143,11 +143,17 @@ export default (context: { contentScriptId: string; postMessage: (message: any)=
 			// segment being typed, so filtering never costs a round trip.
 			let cacheKey: string | null = null;
 			let cached: Promise<CompletionReply> | null = null;
+			let cachedAt = 0;
 
 			const optionsFor = (rest: string): Promise<CompletionReply> => {
 				const key = rest.slice(0, lastSegmentStart(rest));
-				if (cacheKey !== key || !cached) {
+				// Long enough to cover typing a word, short enough that a note
+				// made a moment ago turns up the next time the list opens.
+				const fresh = Date.now() - cachedAt < 5000;
+
+				if (cacheKey !== key || !cached || !fresh) {
 					cacheKey = key;
+					cachedAt = Date.now();
 					cached = context.postMessage({ type: 'complete', rest });
 				}
 				return cached;
