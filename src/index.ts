@@ -6,7 +6,8 @@ import {
 	ToastType,
 	ToolbarButtonLocation,
 } from 'api/types';
-import { formatReference, parseReference } from './reuse/syntax';
+import { formatReference, parseRefLine, parseReference } from './reuse/syntax';
+import { EmbedCache, parseCache, serialiseCache } from './reuse/cache';
 import { embedClasses, embedHtml } from './reuse/render';
 import { NoteEntry, PickResult } from './reuse/types';
 import {
@@ -20,6 +21,7 @@ import {
 	listSections,
 	notesChanged,
 	resolveEmbed,
+	resolveSource,
 	setResolveOptions,
 } from './reuse/resolve';
 import { RECENT_ID, folderStepHtml, noteStepHtml, sectionStepHtml } from './picker';
@@ -34,6 +36,9 @@ const REFRESH_COMMAND = 'reuseSections.refresh';
 
 /** How many notes "recently edited" offers as a shortcut past the notebooks. */
 const RECENT_LIMIT = 60;
+
+/** Where the markdown behind the references in view is kept for the renderer. */
+const CACHE_SETTING = 'embedCache';
 
 const setting = async (key: string): Promise<any> => {
 	try {
@@ -84,8 +89,8 @@ joplin.plugins.register({
 				type: SettingItemType.Bool,
 				section: 'reuseSections',
 				public: true,
-				label: 'Update reused content as its source changes',
-				description: 'Redraws an embedded section moments after the note it came from is edited.',
+				label: 'Fill in new references without waiting',
+				description: 'The first time a reference is used, show its content straight away rather than when the note is next drawn.',
 			},
 			expandNested: {
 				value: true,
@@ -140,7 +145,87 @@ joplin.plugins.register({
 				label: 'Show the toolbar button',
 				description: 'Restart Joplin for a change to take effect.',
 			},
+			[CACHE_SETTING]: {
+				value: '',
+				type: SettingItemType.String,
+				section: 'reuseSections',
+				public: false,
+				label: 'Reused content, ready for the renderer',
+			},
 		});
+
+		// -------------------------------------------------------------
+		// The cache the viewer reads
+		// -------------------------------------------------------------
+		// A markdown-it rule cannot read another note, but Joplin does let a
+		// content script read its own plugin's settings synchronously. So the
+		// markdown behind every reference in view is kept in a setting, and the
+		// rule tokenizes it into the note that borrows it - which is what makes
+		// the other markdown-it plugins apply to it.
+		let cache: EmbedCache = parseCache(String((await setting(CACHE_SETTING)) || ''));
+		let saving: any = null;
+
+		const saveCache = () => {
+			if (saving) clearTimeout(saving);
+			// Resolving a note's references is a burst of small updates; the
+			// setting is written once at the end of it.
+			saving = setTimeout(() => {
+				saving = null;
+				joplin.settings.setValue(CACHE_SETTING, serialiseCache(cache)).catch(() => {});
+			}, 250);
+		};
+
+		/** Resolves `raw` and keeps it, unless an identical entry is already there. */
+		const remember = async (raw: string, force = false): Promise<boolean> => {
+			if (!force && cache[raw]) return false;
+
+			const parsed = parseReference(raw);
+			if (!parsed) return false;
+
+			const resolved = await resolveSource(parsed);
+			const before = cache[raw] ? JSON.stringify(cache[raw]) : '';
+			if (before === JSON.stringify(resolved)) return false;
+
+			// Re-inserted at the end, so the oldest entries are the ones
+			// dropped when the cache is trimmed.
+			delete cache[raw];
+			cache[raw] = resolved;
+			return true;
+		};
+
+		/** Every reference in a note, resolved and kept for the next render. */
+		const rememberNote = async (noteId: string) => {
+			if (!noteId) return;
+
+			try {
+				const note = await joplin.data.get(['notes', noteId], { fields: ['id', 'body'] });
+				let changed = false;
+
+				for (const line of String(note.body || '').split(/\r?\n/)) {
+					const reference = parseRefLine(line);
+					if (reference && await remember(reference.raw)) changed = true;
+				}
+
+				if (changed) saveCache();
+			} catch (_error) {
+				// The note has just been deleted, most likely.
+			}
+		};
+
+		/** Re-resolves what a changed note is used for. */
+		const refreshFor = async (noteId: string) => {
+			let changed = false;
+
+			for (const raw of Object.keys(cache)) {
+				const entry = cache[raw];
+				// Failed entries are retried as well: the note a reference is
+				// waiting for may be the one that has just been created.
+				if (entry.noteId !== noteId && !entry.error) continue;
+				if (await remember(raw, true)) changed = true;
+			}
+
+			if (changed) saveCache();
+		};
 
 		const applySettings = async () => {
 			setResolveOptions({
@@ -150,7 +235,12 @@ joplin.plugins.register({
 		};
 
 		await applySettings();
-		await joplin.settings.onChange(applySettings);
+		await joplin.settings.onChange(async ({ keys }: any) => {
+			// Writing the cache is a setting change of its own; reacting to it
+			// would resolve everything again on every write.
+			if (keys && keys.length === 1 && keys[0] === CACHE_SETTING) return;
+			await applySettings();
+		});
 
 		// -------------------------------------------------------------
 		// The picker
@@ -322,6 +412,14 @@ joplin.plugins.register({
 				return await completeReference(String(message.rest || ''));
 			}
 
+			// A reference was just finished in the editor. Resolving it now
+			// means the note draws it properly the first time, rather than
+			// falling back to the viewer for one render.
+			if (message.type === 'remember' && message.rest) {
+				if (await remember(String(message.rest))) saveCache();
+				return true;
+			}
+
 			return null;
 		});
 
@@ -329,8 +427,22 @@ joplin.plugins.register({
 		// Keeping embedded content current
 		// -------------------------------------------------------------
 		await joplin.workspace.onNoteChange(async (event: any) => {
-			if (event && event.id) notesChanged([event.id]);
+			if (!event || !event.id) return;
+			notesChanged([event.id]);
+			// What the changed note is borrowed for, and what it borrows.
+			await refreshFor(event.id);
+			await rememberNote(event.id);
 		});
+
+		await joplin.workspace.onNoteSelectionChange(async () => {
+			const current = await joplin.workspace.selectedNote();
+			if (current) await rememberNote(current.id);
+		});
+
+		// The references already known about may point at notes that changed
+		// while Joplin was closed.
+		const current = await joplin.workspace.selectedNote();
+		if (current) await rememberNote(current.id);
 
 		// -------------------------------------------------------------
 		// Commands
@@ -355,6 +467,10 @@ joplin.plugins.register({
 			execute: async () => {
 				const picked = await pickReference();
 				if (!picked) return;
+
+				// Resolved before it is written, so the note that is about to
+				// be redrawn already has the content to hand.
+				if (await remember(picked.reference.replace(/^&&&\//, ''))) saveCache();
 				await insertText(picked.reference, 'reuseSections.insertReference', picked.reference);
 			},
 		});
@@ -409,6 +525,15 @@ joplin.plugins.register({
 			label: 'Refresh reused content',
 			execute: async () => {
 				clearEmbedCache();
+
+				let changed = false;
+				for (const raw of Object.keys(cache)) {
+					if (await remember(raw, true)) changed = true;
+				}
+				if (changed) saveCache();
+
+				const note = await joplin.workspace.selectedNote();
+				if (note) await rememberNote(note.id);
 			},
 		});
 

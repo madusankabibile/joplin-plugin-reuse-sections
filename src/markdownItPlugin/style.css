@@ -168,13 +168,17 @@
 .rsx-section-body > :first-child { margin-top: 0; }
 .rsx-section-body > :last-child { margin-bottom: 0; }
 
-/* "Show section markers" turned off: the content stays, the frame goes. */
+/* "Show section markers" turned off: the content stays, the frame goes. The
+ * rule marks the section itself when it can read the setting; the class on the
+ * root is the viewer script doing it when the rule could not. */
+.rsx-section-plain,
 .rsx-hide-sections .rsx-section {
 	border-left: 0;
 	padding-left: 0;
 	margin: 0;
 }
 
+.rsx-section-plain > .rsx-section-tag,
 .rsx-hide-sections .rsx-section-tag {
 	display: none;
 }

@@ -32,10 +32,58 @@ export const embedPlaceholder = (raw: string, label: string): string =>
 	`<div class="rsx-embed-inner"><div class="rsx-status">${escapeHtml(label)}</div></div>` +
 	'</div>';
 
-const sourceLabel = (result: EmbedResult): string => {
+const sourceLabel = (result: { folderPath: string[]; noteTitle: string }): string => {
 	const parts = [...result.folderPath, result.noteTitle].filter(part => !!part);
 	return parts.join(' / ');
 };
+
+/** The head of an embed: where this content actually lives. */
+const headHtml = (source: { folderPath: string[]; noteTitle: string; noteId: string;
+	sectionTitle: string }): string => {
+	const label = sourceLabel(source);
+
+	return '<div class="rsx-head">' +
+		`<a class="rsx-source" href="#" data-rsx-note="${escapeHtml(source.noteId)}" ` +
+		`title="Open ${escapeHtml(label)}">${escapeHtml(label)}</a>` +
+		(source.sectionTitle
+			? `<span class="rsx-chip">${escapeHtml(source.sectionTitle)}</span>`
+			: '<span class="rsx-chip rsx-chip-note">whole note</span>') +
+		'</div>';
+};
+
+/**
+ * An embed whose content is tokenized into the note itself, rather than fetched
+ * by the viewer: the open tag, then the borrowed tokens, then the close tag.
+ */
+export interface EmbedMeta {
+	raw: string;
+	noteId: string;
+	noteTitle: string;
+	folderPath: string[];
+	sectionTitle: string;
+	header: boolean;
+}
+
+export const embedOpen = (meta: EmbedMeta): string => {
+	const classes = [EMBED_CLASS, 'rsx-ready', 'rsx-inline'];
+	if (!meta.header) classes.push('rsx-bare');
+	if (!meta.sectionTitle) classes.push('rsx-whole-note');
+
+	return `<div class="${classes.join(' ')}" data-rsx-source="${escapeHtml(meta.raw)}">` +
+		'<div class="rsx-embed-inner">' +
+		(meta.header ? headHtml(meta) : '') +
+		'<div class="rsx-body">';
+};
+
+export const embedClose = (): string => '</div></div></div>';
+
+/** A reference that resolves to nothing, drawn without a trip to the viewer. */
+export const referenceError = (raw: string, error: string): string =>
+	`<div class="${EMBED_CLASS} rsx-failed" data-rsx-source="${escapeHtml(raw)}">` +
+	'<div class="rsx-embed-inner"><div class="rsx-error">' +
+	`<span class="rsx-error-title">${escapeHtml(error)}</span>` +
+	`<code class="rsx-error-ref">&amp;&amp;&amp;/${escapeHtml(raw)}</code>` +
+	'</div></div></div>';
 
 /** The finished embed: a source line, then the content of the other note. */
 export const embedHtml = (result: EmbedResult, options: EmbedOptions): string => {
@@ -47,15 +95,7 @@ export const embedHtml = (result: EmbedResult, options: EmbedOptions): string =>
 			'</div></div>';
 	}
 
-	const header = options.header
-		? '<div class="rsx-head">' +
-			`<a class="rsx-source" href="#" data-rsx-note="${escapeHtml(result.noteId)}" ` +
-			`title="Open ${escapeHtml(sourceLabel(result))}">${escapeHtml(sourceLabel(result))}</a>` +
-			(result.sectionTitle
-				? `<span class="rsx-chip">${escapeHtml(result.sectionTitle)}</span>`
-				: '<span class="rsx-chip rsx-chip-note">whole note</span>') +
-			'</div>'
-		: '';
+	const header = options.header ? headHtml(result) : '';
 
 	return `<div class="rsx-embed-inner">${header}<div class="rsx-body">${result.html}</div></div>`;
 };
@@ -77,6 +117,8 @@ export interface SectionMeta {
 	label: string;
 	index: number;
 	unclosed: boolean;
+	/** "Outline shareable sections" is off: keep the content, drop the frame. */
+	hidden: boolean;
 }
 
 /**
@@ -89,8 +131,12 @@ export const sectionOpen = (meta: SectionMeta): string => {
 		? `${escapeHtml(meta.id)} <span class="rsx-section-label">${escapeHtml(meta.label)}</span>`
 		: escapeHtml(meta.id);
 
-	return `<div class="rsx-section${meta.unclosed ? ' rsx-section-unclosed' : ''}" data-rsx-section="${escapeHtml(meta.id)}">` +
-		`<div class="rsx-section-tag">${name}</div>` +
+	const classes = ['rsx-section'];
+	if (meta.unclosed) classes.push('rsx-section-unclosed');
+	if (meta.hidden) classes.push('rsx-section-plain');
+
+	return `<div class="${classes.join(' ')}" data-rsx-section="${escapeHtml(meta.id)}">` +
+		(meta.hidden ? '' : `<div class="rsx-section-tag">${name}</div>`) +
 		'<div class="rsx-section-body">';
 };
 

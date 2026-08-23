@@ -218,6 +218,7 @@ const testViewer = () => {
 
 	const MarkdownIt = require(path.join(root, 'node_modules/markdown-it'));
 	const loaded = require(bundle);
+
 	const script = (loaded.default || loaded)({ contentScriptId: 'test' });
 
 	const md = new MarkdownIt({ html: true });
@@ -243,6 +244,81 @@ const testViewer = () => {
 	check('an unnamed section is numbered', html.includes('data-rsx-section="section-2"'));
 	eq('the viewer script and stylesheet are declared',
 		script.assets(), [{ name: './style.css' }, { name: './embed.js' }]);
+
+	// ---------------------------------------------------------------------
+	// The point of the whole exercise: content borrowed from another note is
+	// tokenized into this one, so every other markdown-it plugin renders it.
+	// ---------------------------------------------------------------------
+
+	const cache = {
+		version: 1,
+		entries: {
+			'Anatomy/Head/#brain': {
+				markdown: [
+					'!!! checklist_boxed Checklist',
+					'[x] Done item',
+					'[ ] Pending item',
+					'!!!->',
+					'',
+					'And **bold** text.',
+				].join('\n'),
+				noteId: 'n-head',
+				noteTitle: 'Head',
+				folderPath: ['Medicine', 'Anatomy'],
+				sectionTitle: 'Grey matter',
+			},
+			'Anatomy/Gone': { markdown: '', noteId: '', noteTitle: '', folderPath: [], sectionTitle: '', error: 'No note called "Gone"' },
+		},
+	};
+
+	const withCache = new MarkdownIt({ html: true });
+
+	// Stands in for another plugin - HTML Blocks, say - with a rule of its own
+	// on the same markdown-it instance.
+	withCache.block.ruler.before('fence', 'other_plugin', (state, startLine, endLine, silent) => {
+		const start = state.bMarks[startLine] + state.tShift[startLine];
+		if (!/^!!! /.test(state.src.slice(start, state.eMarks[startLine]))) return false;
+		if (silent) return true;
+
+		let line = startLine;
+		while (line + 1 < endLine) {
+			line += 1;
+			const text = state.src.slice(state.bMarks[line] + state.tShift[line], state.eMarks[line]);
+			if (text.trim() === '!!!->') break;
+		}
+
+		const token = state.push('other_plugin', 'div', 0);
+		token.block = true;
+		state.line = line + 1;
+		return true;
+	}, { alt: ['paragraph'] });
+	withCache.renderer.rules.other_plugin = () => '<div class="other-plugin">a real block</div>';
+
+	withCache.use((script.plugin), {
+		settingValue: key => (key === 'embedCache' ? JSON.stringify(cache) : undefined),
+	});
+
+	const embedded = withCache.render([
+		'Before.',
+		'',
+		'&&&/Anatomy/Head/#brain',
+		'',
+		'&&&/Anatomy/Gone',
+		'',
+		'&&&/Anatomy/Never seen',
+	].join('\n'));
+
+	check("another plugin's rule runs on borrowed content",
+		embedded.includes('<div class="other-plugin">'), embedded);
+	check('and its markup is not left as text', !embedded.includes('!!! checklist_boxed'), embedded);
+	check('ordinary markdown in the same section renders too',
+		embedded.includes('<strong>bold</strong>'), embedded);
+	check('the source of the content is named',
+		embedded.includes('Medicine / Anatomy / Head') && embedded.includes('Grey matter'), embedded);
+	check('a reference that resolves to nothing says so',
+		embedded.includes('No note called &quot;Gone&quot;'), embedded);
+	check('one the plugin has not seen yet waits for the viewer',
+		embedded.includes('data-rsx-ref="Anatomy/Never seen"'), embedded);
 };
 
 // ---------------------------------------------------------------------------

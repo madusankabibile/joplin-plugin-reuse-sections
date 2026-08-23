@@ -112,8 +112,8 @@ for when you would rather not type:
 Reused content is fetched when the note is drawn, not stored in it. Your note
 holds one line - the reference - and nothing else. So:
 
-- editing the source updates every note that reuses it, within a couple of
-  seconds, without either note being reopened;
+- editing the source updates every note that reuses it, from the next time each
+  is drawn - which, for the note you are editing, is as you type;
 - deleting the source turns the embed into a plain "no note called ..." message
   that still shows the reference, so it can be repointed rather than silently
   losing your content;
@@ -130,7 +130,7 @@ holds one line - the reference - and nothing else. So:
 | --- | --- | --- |
 | Show where reused content comes from | on | The source note and section, above the content |
 | Outline shareable sections in the viewer | on | Marks the parts of a note others can reuse |
-| Update reused content as its source changes | on | Redraws an embed moments after its source is edited |
+| Fill in new references without waiting | on | Shows a brand new reference's content straight away, rather than when the note is next drawn |
 | Follow references inside reused content | on | A reused section brings its own references along, three levels deep |
 | Find notes that have moved | on | Falls back to a title search when a notebook path no longer matches |
 | How new references are written | readable | Readable paths, or ids that survive renames |
@@ -143,23 +143,22 @@ needs a restart.
 
 ## What a reference brings with it
 
-Reused content is drawn by **Joplin's own renderer**, the same one that draws
-the note it came from, so your other plugins apply to it as well: HTML Blocks
-cards, admonitions, KaTeX maths, tables, checkboxes, images and attachments all
-arrive rendered rather than as their markup. Stylesheets the borrowing note has
-not loaded - KaTeX's, for one - are pulled in with the content.
+Borrowed content is not pasted in as finished HTML: the markdown itself is
+tokenized as part of the note that borrows it, by the same pipeline that draws
+the rest of that note. So **your other plugins apply to it**. An HTML Blocks
+card arrives as a card, a callout as a callout, maths as maths, a Mermaid
+diagram as a diagram - exactly as they look in the note they came from.
 
-Two things to know:
+That works because Joplin lets a content script read its own plugin's settings
+synchronously while rendering. The plugin keeps the markdown behind the
+references in view in one of its own settings, and the renderer reads it from
+there.
 
-- **Diagrams drawn by a script** (Mermaid, ABC notation) come through as their
-  source. Only stylesheets travel with an embed, not the scripts that would draw
-  those in the browser.
-- **Exported HTML and PDF** contain whatever was on screen when the export ran.
-  Open the note in the viewer first, so the embeds have resolved.
-
-On a version of Joplin without the internal `renderMarkup` command, the plugin
-renders embeds itself instead - plain markdown, tables and images, but none of
-your other renderer plugins.
+The first time a reference is used - before the plugin has resolved it, or on a
+note that has just arrived from another device - there is nothing in that
+setting yet. The viewer fills the gap by asking the plugin directly, which gets
+you the content but without your other plugins applied to it. It sorts itself
+out the next time the note is drawn: type anything, or switch away and back.
 
 ## Editor highlighting
 
@@ -197,6 +196,7 @@ src/
     syntax.ts               the fences and the reference format, shared by all
     types.ts                what travels between plugin, viewer and dialog
     render.ts               the HTML of an embed and of a section marker
+    cache.ts                the setting the renderer reads borrowed markdown from
     resolve.ts              reference -> note -> content, and the data queries
     markdown.ts             the fallback renderer, for older Joplin versions
   markdownItPlugin/         viewer: the block rules, and the script that

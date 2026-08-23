@@ -172,7 +172,18 @@ export default (context: { contentScriptId: string; postMessage: (message: any)=
 
 					// A notebook is never the end of a reference, so the next
 					// list opens straight away rather than waiting for a key.
-					if (option.continues) setTimeout(() => startCompletion(view), 0);
+					if (option.continues) {
+						setTimeout(() => startCompletion(view), 0);
+						return;
+					}
+
+					// The reference is finished. Telling the plugin now means it
+					// has the content ready before the viewer redraws the note,
+					// so the first draw is the properly rendered one.
+					const head = from + option.insert.length;
+					const line = view.state.doc.lineAt(head);
+					const match = /(?:^|\s)&&&\/(.*)$/.exec(line.text.slice(0, head - line.from));
+					if (match) context.postMessage({ type: 'remember', rest: match[1] }).catch(() => {});
 				},
 			});
 

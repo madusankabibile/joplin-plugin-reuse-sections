@@ -26,6 +26,7 @@ import {
 	SectionEntry,
 } from './types';
 import { RenderContext, collectItemIds, emptyContext, renderMarkdown } from './markdown';
+import { CachedEmbed } from './cache';
 
 /** How many levels of "a reused section that reuses another one" to follow. */
 const MAX_DEPTH = 3;
@@ -630,6 +631,39 @@ const renderMarkup = async (markdown: string): Promise<RenderedMarkup> => {
 		assets: [],
 		css: [],
 	};
+};
+
+/**
+ * The markdown a reference stands for, for the cache the viewer reads. This is
+ * the good path: handing the markdown to the renderer lets the note that
+ * borrows it tokenize it along with its own, so every other markdown-it plugin
+ * applies. `resolveEmbed` below is the fallback, for a reference the plugin has
+ * not seen yet.
+ */
+export const resolveSource = async (reference: Reference): Promise<CachedEmbed> => {
+	try {
+		const content = await contentFor(reference, 0, new Set<string>());
+
+		if ('error' in content) {
+			return {
+				markdown: '', noteId: '', noteTitle: '', folderPath: [], sectionTitle: '',
+				error: content.error,
+			};
+		}
+
+		return {
+			markdown: content.markdown,
+			noteId: content.note.id,
+			noteTitle: content.note.title || '(Untitled)',
+			folderPath: await folderPathOf(content.note.parent_id),
+			sectionTitle: content.section,
+		};
+	} catch (error) {
+		return {
+			markdown: '', noteId: '', noteTitle: '', folderPath: [], sectionTitle: '',
+			error: `Could not read that note: ${error.message}`,
+		};
+	}
 };
 
 export const resolveEmbed = async (reference: Reference): Promise<EmbedResult> => {
