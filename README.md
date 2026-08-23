@@ -21,6 +21,23 @@ The note viewer draws the borrowed content in place, and keeps it current: edit
 the original and every note that reuses it follows along, without copies to
 chase or paste again.
 
+## Screenshots
+
+![Marking a section as shareable](screenshots/01-mark-a-section.png)
+
+*Mark the part of a note other notes may reuse. It stays ordinary markdown, and
+the viewer marks it out quietly.*
+
+![Picking a section from the drop-down](screenshots/02-pick-a-section.png)
+
+*Type `&&&/` and the drop-down walks notebooks, then notes, then the sections of
+the note you landed on - with a preview of each.*
+
+![The section reused in another note](screenshots/03-reused-in-another-note.png)
+
+*One reference line in a note in another notebook, and the section is drawn in
+place - headings, lists and all, exactly as in the note it came from.*
+
 ## Installation
 
 Search for **Reuse Sections** in *Tools &rarr; Options &rarr; Plugins*, or

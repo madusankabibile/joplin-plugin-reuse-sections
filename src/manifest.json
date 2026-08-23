@@ -25,6 +25,20 @@
 		"viewer",
 		"productivity"
 	],
+	"screenshots": [
+		{
+			"src": "screenshots/01-mark-a-section.png",
+			"label": "Marking a section of a note as shareable with &&& ... /&&&"
+		},
+		{
+			"src": "screenshots/02-pick-a-section.png",
+			"label": "Typing &&&/ opens a drop-down of notebooks, then notes, then the sections of a note"
+		},
+		{
+			"src": "screenshots/03-reused-in-another-note.png",
+			"label": "The section rendered in another note, in another notebook, from a single reference line"
+		}
+	],
 	"icons": {
 		"16": "images/icon16.png",
 		"32": "images/icon32.png",
