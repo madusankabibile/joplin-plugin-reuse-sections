@@ -7,7 +7,7 @@
 		"desktop",
 		"mobile"
 	],
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"name": "Reuse Sections",
 	"description": "Write a section once and reuse it anywhere: mark it with `&&&` ... `/&&&`, then embed it in any note with `&&&/notebook/note/#section`.",
 	"author": "madusanka",

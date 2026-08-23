@@ -1,6 +1,6 @@
 {
   "name": "joplin-plugin-reuse-sections",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Write a section once and reuse it anywhere: mark it with `&&&` ... `/&&&`, then embed it in any note with `&&&/notebook/note/#section`.",
   "author": "madusanka",
   "scripts": {
@@ -35,7 +35,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "fs-extra": "^10.1.0",
     "glob": "^8.0.3",
-    "markdown-it": "^13.0.2",
+    "markdown-it": "^14.3.0",
     "tar": "^6.1.11",
     "ts-loader": "^9.3.1",
     "typescript": "^4.8.2",
