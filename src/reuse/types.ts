@@ -2,6 +2,19 @@
 // picker dialog. Everything here has to survive `JSON.stringify`, because that
 // is what a `postMessage` round trip does to it.
 
+/**
+ * A stylesheet the borrowed content needs. Joplin leaves out the assets of
+ * rules that no rule used in the note being drawn - KaTeX's, for one - so an
+ * embed has to bring its own.
+ */
+export interface EmbedAsset {
+	/** Relative to the viewer's `pluginAssets/` directory. */
+	name: string;
+	path: string;
+	pathIsAbsolute: boolean;
+	mime: string;
+}
+
 /** A resolved embed, ready for the note viewer. */
 export interface EmbedResult {
 	ok: boolean;
@@ -20,6 +33,10 @@ export interface EmbedResult {
 	error: string;
 	/** Bumped whenever the source note changes, so the viewer can refresh. */
 	revision: number;
+	/** Stylesheets the content needs that the note may not already have. */
+	assets: EmbedAsset[];
+	/** Inline CSS that goes with them. */
+	css: string[];
 }
 
 /** A notebook, as the first step of the picker shows it. */

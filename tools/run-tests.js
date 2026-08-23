@@ -20,12 +20,13 @@ const buildDir = path.join(root, '.test-build');
 let failed = 0;
 let passed = 0;
 
-const check = (label, ok) => {
+const check = (label, ok, detail) => {
 	if (ok) {
 		passed++;
 	} else {
 		failed++;
-		console.log(`FAIL ${label}`);
+		console.log(`FAIL ${label}${detail ? `
+  ${detail}` : ''}`);
 	}
 };
 
@@ -311,7 +312,10 @@ const testResolve = async r => {
 	eq('to the note it came from',
 		[section.noteTitle, section.folderPath, section.sectionTitle],
 		['Head', ['Medicine', 'Anatomy'], 'Grey matter']);
-	check('and arrives as HTML', section.html.includes('<strong>brain</strong>'));
+	// How it is turned into HTML is the subject of testRenderPath below; here
+	// it only matters that the right content got that far.
+	check('carrying the content of that section',
+		section.html.includes('The **brain** sits inside the skull.'), section.html);
 
 	const whole = await r.resolveEmbed(reference('Head', ''));
 	check('a whole note keeps its content', whole.html.includes('An unnamed part'));
@@ -332,6 +336,37 @@ const testResolve = async r => {
 };
 
 // ---------------------------------------------------------------------------
+// Rendering through Joplin, so other plugins' markup comes through as markup
+// ---------------------------------------------------------------------------
+
+const testRenderPath = async (r, fake) => {
+	const reference = { folderPath: ['Anatomy'], noteTitle: 'Head', noteId: '', section: 'brain', raw: 'render-check' };
+
+	r.clearEmbedCache();
+	const viaJoplin = await r.resolveEmbed(reference);
+	check("Joplin's own renderer is used when it is there",
+		viaJoplin.html.includes('joplin-rendered'), viaJoplin.html);
+	check('the markup reaches it unrendered, for its rules to handle',
+		viaJoplin.html.includes('The **brain** sits inside the skull.'), viaJoplin.html);
+	check('resources are handed over so images can be drawn',
+		!!fake.app.lastRenderOptions && !!fake.app.lastRenderOptions.resources);
+	check('and only the body is asked for', fake.app.lastRenderOptions.bodyOnly === true);
+
+	eq('stylesheets the note may lack are passed on',
+		viaJoplin.assets.map(asset => asset.name), ['katex/katex.css']);
+	eq('inline css too', viaJoplin.css, ['.joplin-rendered { color: inherit; }']);
+
+	// Older Joplin, without the command.
+	fake.app.hasRenderMarkup = false;
+	r.clearEmbedCache();
+	const fallback = await r.resolveEmbed({ ...reference, raw: 'fallback-check' });
+	check('the plugin renders it itself when the command is missing',
+		fallback.ok && fallback.html.includes('<strong>brain</strong>'), fallback.html);
+	eq('and asks for no stylesheets', [fallback.assets, fallback.css], [[], []]);
+	fake.app.hasRenderMarkup = true;
+};
+
+// ---------------------------------------------------------------------------
 
 compile();
 
@@ -344,6 +379,7 @@ compile();
 		const resolve = required('resolve.js');
 		await testCompletion(resolve);
 		await testResolve(resolve);
+		await testRenderPath(resolve, require(path.join(buildDir, 'tools/test/fake-api.js')));
 	} finally {
 		fs.rmSync(buildDir, { recursive: true, force: true });
 	}

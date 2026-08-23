@@ -39,13 +39,67 @@
 		return Array.prototype.slice.call(document.querySelectorAll('.rsx-embed[data-rsx-ref]'));
 	}
 
+	// Borrowed content is drawn by Joplin's own renderer, so it may need a
+	// stylesheet this note has not loaded - KaTeX's, for one, which Joplin
+	// leaves out of a note that has no maths of its own.
+	function addStyles(response) {
+		var assets = response.assets || [];
+		var head = document.head || document.documentElement;
+
+		for (var i = 0; i < assets.length; i++) {
+			var asset = assets[i];
+			var href = asset.pathIsAbsolute
+				? 'file:///' + String(asset.path || '').replace(/\\/g, '/').replace(/^\/+/, '')
+				: 'pluginAssets/' + asset.name;
+
+			if (document.querySelector('link[href="' + href + '"]')) continue;
+			// Joplin's own assets are already here under the same href, so this
+			// only ever adds what is missing.
+			var link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.href = href;
+			link.setAttribute('data-rsx-asset', asset.name || '');
+			head.appendChild(link);
+		}
+
+		var css = response.css || [];
+		for (var c = 0; c < css.length; c++) {
+			var key = 'rsx-css-' + hash(css[c]);
+			if (document.getElementById(key)) continue;
+			var style = document.createElement('style');
+			style.id = key;
+			style.textContent = css[c];
+			head.appendChild(style);
+		}
+	}
+
+	function hash(text) {
+		var value = 0;
+		for (var i = 0; i < text.length; i++) {
+			value = ((value << 5) - value + text.charCodeAt(i)) | 0;
+		}
+		return String(value >>> 0);
+	}
+
 	function fill(element, response) {
 		if (!response) return;
+		addStyles(response);
 		element.className = response.classes || 'rsx-embed rsx-failed';
 		element.innerHTML = response.html || '';
 		element.setAttribute('data-rsx-state', 'ready');
 		element.setAttribute('data-rsx-revision', String(response.revision || 0));
 		if (response.revision) state.revision = response.revision;
+	}
+
+	/** How many embeds this one sits inside, so a loop cannot run away. */
+	function depthOf(element) {
+		var depth = 0;
+		var node = element.parentNode;
+		while (node && node !== document) {
+			if (node.nodeType === 1 && node.classList && node.classList.contains('rsx-embed')) depth++;
+			node = node.parentNode;
+		}
+		return depth;
 	}
 
 	function load(element, force) {
@@ -54,6 +108,18 @@
 
 		var status = element.getAttribute('data-rsx-state');
 		if (!force && (status === 'ready' || status === 'loading')) return;
+
+		// Content pulled in by Joplin's renderer can itself contain a
+		// reference, which is how nesting works - but only so far.
+		if (depthOf(element) >= 3) {
+			element.setAttribute('data-rsx-state', 'ready');
+			element.className = 'rsx-embed rsx-failed';
+			element.innerHTML = '<div class="rsx-embed-inner"><div class="rsx-error">' +
+				'<span class="rsx-error-title">Reused content is nested too deeply</span>' +
+				'<code class="rsx-error-ref">&amp;&amp;&amp;/' + ref + '</code></div></div>';
+			return;
+		}
+
 		element.setAttribute('data-rsx-state', 'loading');
 
 		post({ type: 'embed', ref: ref }).then(function(response) {

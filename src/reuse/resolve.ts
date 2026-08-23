@@ -19,6 +19,7 @@ import {
 import {
 	CompletionOption,
 	CompletionReply,
+	EmbedAsset,
 	EmbedResult,
 	FolderEntry,
 	NoteEntry,
@@ -456,6 +457,8 @@ const failure = (raw: string, error: string): EmbedResult => ({
 	sectionTitle: '',
 	error,
 	revision,
+	assets: [],
+	css: [],
 });
 
 /** The markdown a reference stands for, with nested references filled in. */
@@ -518,6 +521,80 @@ const expandNested = async (markdown: string, depth: number, seen: Set<string>):
 	return changed ? lines.join('\n') : markdown;
 };
 
+// ---------------------------------------------------------------------------
+// Markdown to HTML
+// ---------------------------------------------------------------------------
+
+/** Joplin's `MarkupLanguage.Markdown`, which the plugin API does not export. */
+const MARKUP_MARKDOWN = 1;
+
+interface RenderedMarkup {
+	html: string;
+	assets: EmbedAsset[];
+	css: string[];
+}
+
+/**
+ * The resources the borrowed markdown refers to, in the shape Joplin's
+ * renderer expects, so its own rules can draw the images.
+ */
+const buildResourceInfos = async (markdown: string): Promise<Record<string, any>> => {
+	const infos: Record<string, any> = {};
+
+	for (const id of collectItemIds(markdown)) {
+		try {
+			const item = await joplin.data.get(['resources', id], {
+				fields: [
+					'id', 'title', 'mime', 'filename', 'file_extension', 'size',
+					'encryption_applied', 'encryption_blob_encrypted', 'is_shared', 'updated_time',
+				],
+			});
+			infos[id] = { item, localState: { fetch_status: 2 } };
+		} catch (_error) {
+			// Not a resource - a link to another note, most likely, which the
+			// renderer handles by itself.
+		}
+	}
+
+	return infos;
+};
+
+/**
+ * Renders through Joplin's own pipeline, which is what makes an embed look
+ * exactly like the note it came from: every other markdown-it content script
+ * runs over it too, so another plugin's blocks, fences and diagrams come
+ * through as blocks, fences and diagrams rather than as their markup.
+ *
+ * Returns null on any older version that does not have the command, and the
+ * caller falls back to the plugin's own renderer.
+ */
+const renderThroughJoplin = async (markdown: string): Promise<RenderedMarkup | null> => {
+	try {
+		const result = await joplin.commands.execute(
+			'renderMarkup',
+			MARKUP_MARKDOWN,
+			markdown,
+			null,
+			{
+				bodyOnly: true,
+				resources: await buildResourceInfos(markdown),
+			},
+		);
+
+		if (!result || typeof result.html !== 'string') return null;
+
+		return {
+			// Joplin sanitises its own output, so it is used as it arrives.
+			html: result.html,
+			assets: (result.pluginAssets || []).filter((asset: EmbedAsset) =>
+				asset && /\.css$/i.test(asset.name || '')),
+			css: result.cssStrings || [],
+		};
+	} catch (_error) {
+		return null;
+	}
+};
+
 /** Resolves `:/<id>` links and images, which mean nothing outside Joplin. */
 const buildRenderContext = async (markdown: string): Promise<RenderContext> => {
 	const context = emptyContext();
@@ -543,6 +620,18 @@ const buildRenderContext = async (markdown: string): Promise<RenderContext> => {
 	return context;
 };
 
+/** Joplin's renderer when it is there, the plugin's own when it is not. */
+const renderMarkup = async (markdown: string): Promise<RenderedMarkup> => {
+	const joplinRendered = await renderThroughJoplin(markdown);
+	if (joplinRendered) return joplinRendered;
+
+	return {
+		html: renderMarkdown(markdown, await buildRenderContext(markdown)),
+		assets: [],
+		css: [],
+	};
+};
+
 export const resolveEmbed = async (reference: Reference): Promise<EmbedResult> => {
 	// Everything that goes back to the viewer is stamped with the revision as
 	// it is now, not as it was when the content was cached: the viewer compares
@@ -559,19 +648,22 @@ export const resolveEmbed = async (reference: Reference): Promise<EmbedResult> =
 		if ('error' in content) {
 			result = failure(reference.raw, content.error);
 		} else {
-			const context = await buildRenderContext(content.markdown);
+			const rendered = content.markdown.trim()
+				? await renderMarkup(content.markdown)
+				: { html: '<p class="rsx-missing">This section is empty.</p>', assets: [], css: [] };
+
 			result = {
 				ok: true,
 				raw: reference.raw,
-				html: content.markdown.trim()
-					? renderMarkdown(content.markdown, context)
-					: '<p class="rsx-missing">This section is empty.</p>',
+				html: rendered.html,
 				noteId: content.note.id,
 				noteTitle: content.note.title || '(Untitled)',
 				folderPath: await folderPathOf(content.note.parent_id),
 				sectionTitle: content.section,
 				error: '',
 				revision,
+				assets: rendered.assets,
+				css: rendered.css,
 			};
 		}
 	} catch (error) {

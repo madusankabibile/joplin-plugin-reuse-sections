@@ -1,13 +1,11 @@
-// Turning the borrowed markdown into HTML.
+// The fallback renderer for borrowed content.
 //
-// The note viewer cannot do this for us: by the time the viewer script knows
-// which note to pull in, the markdown pipeline has already run. So the plugin
-// keeps a markdown-it of its own and hands back finished HTML.
-//
-// It is not Joplin's renderer, so an embed gets plain CommonMark plus tables
-// and strikethrough - no KaTeX, no Mermaid. Everything else about the note is
-// preserved, including its images and its links to other notes, which are
-// rewritten here because `:/<id>` means nothing outside Joplin's own renderer.
+// Normally `resolve.ts` renders an embed with Joplin's own renderer, through
+// the `renderMarkup` command, so that every other markdown-it content script
+// runs over it as well. This markdown-it is what happens instead on a version
+// of Joplin that does not have that command: plain CommonMark plus tables and
+// strikethrough, with `:/<id>` images and note links rewritten here, because
+// they mean nothing outside Joplin's renderer.
 
 import MarkdownIt from 'markdown-it';
 

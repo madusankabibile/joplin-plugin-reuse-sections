@@ -141,18 +141,25 @@ holds one line - the reference - and nothing else. So:
 Changing the last two takes effect when the note is reopened; the toolbar button
 needs a restart.
 
-## What a reference can and cannot bring with it
+## What a reference brings with it
 
-Reused content is rendered by the plugin rather than by Joplin's own pipeline,
-so:
+Reused content is drawn by **Joplin's own renderer**, the same one that draws
+the note it came from, so your other plugins apply to it as well: HTML Blocks
+cards, admonitions, KaTeX maths, tables, checkboxes, images and attachments all
+arrive rendered rather than as their markup. Stylesheets the borrowing note has
+not loaded - KaTeX's, for one - are pulled in with the content.
 
-- **markdown, tables, inline HTML, images and attachments** come through,
-  including `:/resource` images and links to other notes, which are rewritten so
-  they still work from the borrowing note;
-- **KaTeX, Mermaid and other renderer plugins** do not run inside an embed - the
-  markdown is shown as written;
-- **exported HTML and PDF** contain whatever was on screen when the export ran.
+Two things to know:
+
+- **Diagrams drawn by a script** (Mermaid, ABC notation) come through as their
+  source. Only stylesheets travel with an embed, not the scripts that would draw
+  those in the browser.
+- **Exported HTML and PDF** contain whatever was on screen when the export ran.
   Open the note in the viewer first, so the embeds have resolved.
+
+On a version of Joplin without the internal `renderMarkup` command, the plugin
+renders embeds itself instead - plain markdown, tables and images, but none of
+your other renderer plugins.
 
 ## Editor highlighting
 
@@ -191,7 +198,7 @@ src/
     types.ts                what travels between plugin, viewer and dialog
     render.ts               the HTML of an embed and of a section marker
     resolve.ts              reference -> note -> content, and the data queries
-    markdown.ts             markdown -> HTML for borrowed content
+    markdown.ts             the fallback renderer, for older Joplin versions
   markdownItPlugin/         viewer: the block rules, and the script that
                             fills embeds in
   codeMirrorPlugin/         editor: the drop-down, highlighting, commands

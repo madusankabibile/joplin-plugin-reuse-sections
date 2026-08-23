@@ -296,6 +296,10 @@ joplin.plugins.register({
 					html: embedHtml(result, options),
 					revision: result.revision,
 					ok: result.ok,
+					// Stylesheets the borrowed content needs and the note it is
+					// being drawn in may not have.
+					assets: result.assets,
+					css: result.css,
 				};
 			}
 
